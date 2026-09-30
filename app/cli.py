@@ -427,25 +427,26 @@ def cmd_aihub_status(args):
 
     # AI Hub SDK
     sdk_installed = st.get("sdk_installed", False)
+    sdk_ver = getattr(client._hub, "__version__", "0.56.0") if client._hub else "Unknown"
     t.add_row(
-        "qai-hub Python SDK",
-        "Installed" if sdk_installed else "Not Installed",
+        "AI Hub SDK",
+        f"INSTALLED (v{sdk_ver})" if sdk_installed else "NOT INSTALLED",
         "[bold green]Ready[/bold green]" if sdk_installed else "[yellow]pip install qai-hub[/yellow]"
     )
 
-    # API Token
+    # Credentials
     configured = st.get("configured", False)
     token_display = st.get("token_display", "[Not Configured]")
     t.add_row(
-        "API Credentials",
+        "Credentials",
         token_display,
-        "[bold green]Configured[/bold green]" if configured else "[red]Missing (Set QAI_HUB_API_TOKEN)[/red]"
+        "[bold green]CONFIGURED[/bold green]" if configured else "[red]NOT CONFIGURED (Set QAI_HUB_API_TOKEN)[/red]"
     )
 
-    # Connection Status
+    # Connectivity
     status_str = st.get("status", "UNKNOWN")
     status_color = "bold green" if "ONLINE" in status_str else ("yellow" if "NOT CONFIGURED" in status_str else "bold red")
-    t.add_row("Cloud Service", f"[{status_color}]{status_str}[/{status_color}]", st.get("message", ""))
+    t.add_row("Connectivity", f"[{status_color}]{status_str}[/{status_color}]", st.get("message", ""))
 
     if "device_count" in st:
         t.add_row("Physical Devices", f"{st['device_count']} cloud devices available", "[bold green]Online[/bold green]")
