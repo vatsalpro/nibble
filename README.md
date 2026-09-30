@@ -49,6 +49,7 @@ Development Hardware Status:
 | **Empirical Benchmarking** | Yes (Real monotonic timer measurements) | Yes (Real on-device NPU measurements) |
 | **Accuracy Validation** | Yes (Cosine similarity, MAE, RMSE) | Yes (Cosine similarity, MAE, RMSE) |
 | **Reporting (MD, PDF, JSON, CSV)** | Yes (With AMD development disclaimer)| Yes (With Snapdragon native badge) |
+| **Qualcomm AI Hub Cloud Validation** | Yes (Optional via official `qai-hub` SDK) | Yes (Optional via official `qai-hub` SDK) |
 
 ---
 
@@ -195,7 +196,26 @@ Run the full verification suite via CLI:
 python -m nibble test-mvp
 ```
 
-### 6. Desktop GUI
+### 6. Qualcomm AI Hub Cloud Validation & Device Profiling
+Manage and profile models on physical Snapdragon cloud hardware:
+```powershell
+# Check AI Hub SDK readiness and account status
+python -m nibble aihub status
+
+# Configure your Qualcomm AI Hub API token
+python -m nibble aihub configure --token YOUR_API_TOKEN
+
+# List available physical Snapdragon devices
+python -m nibble aihub devices --filter "X Elite"
+
+# Upload and profile on genuine Snapdragon Hexagon NPU
+python -m nibble aihub profile models/test_cnn.onnx --device "Snapdragon X Elite CRD"
+
+# Compare host AMD execution vs remote Snapdragon NPU
+python -m nibble compare-local-aihub models/test_cnn.onnx
+```
+
+### 7. Desktop GUI
 Launch the modern PySide6 desktop interface:
 ```powershell
 python -m nibble gui
@@ -204,7 +224,19 @@ python -m nibble gui
 
 ---
 
-## 7. Future Deployment on HP Snapdragon PCs
+## 7. Qualcomm AI Hub Integration Architecture
+
+Nibble integrates with the official Qualcomm AI Hub Python SDK (`qai-hub`) as an independent, optional validation backend:
+
+* **Offline-First Independence**: If unconfigured or offline, Nibble runs 100% locally on host AMD hardware without errors or blocking dependencies.
+* **Zero Fabrication**: Host AMD CPU/GPU metrics are never reported as NPU metrics. Remote Snapdragon profiling is stamped as `[ACTUAL_DEVICE_MEASUREMENT]` and verified using per-layer telemetry (`NPU_CONFIRMED`).
+* **Reproducible Telemetry**: Completed jobs automatically export audit bundles under `reports/aihub/<job_id>/` with `raw_result.json`, `normalized_result.json`, and `summary.md`.
+
+For in-depth documentation, see [docs/qualcomm_aihub.md](docs/qualcomm_aihub.md).
+
+---
+
+## 8. Future Deployment on HP Snapdragon PCs
 
 To deploy the optimized models onto an HP PC powered by Qualcomm Snapdragon (e.g., HP OmniBook X with Snapdragon X Elite):
 

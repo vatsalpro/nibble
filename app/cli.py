@@ -400,6 +400,366 @@ def cmd_providers(args):
 
     console.print(t)
 
+
+def cmd_aihub_status(args):
+    """Display Qualcomm AI Hub SDK & cloud connectivity status."""
+    from nibble.qualcomm.aihub_client import QualcommAIHubClient
+    from app.core.hardware_manager import HardwareManager
+
+    hw = HardwareManager.get_hardware_profile()
+    client = QualcommAIHubClient()
+    st = client.get_status()
+
+    console.print(Panel.fit(
+        "[bold cyan]Qualcomm AI Hub Cloud Validation & Device Profiler[/bold cyan]\n"
+        "[dim]Independent optional cloud backend for physical Snapdragon validation[/dim]",
+        box=box.ROUNDED
+    ))
+
+    t = Table(box=box.SIMPLE_HEAVY)
+    t.add_column("Property", style="bold white", width=22)
+    t.add_column("Value", style="cyan")
+    t.add_column("Status / Assessment", style="green")
+
+    # Local host check (Zero-fabrication rule)
+    t.add_row("Local Host Machine", f"{hw.cpu_vendor} ({hw.cpu_model})", "[yellow]AMD64 / x64 Host[/yellow]")
+    t.add_row("Local Architecture", hw.cpu_arch, "Local execution active (Offline MVP)")
+
+    # AI Hub SDK
+    sdk_installed = st.get("sdk_installed", False)
+    t.add_row(
+        "qai-hub Python SDK",
+        "Installed" if sdk_installed else "Not Installed",
+        "[bold green]Ready[/bold green]" if sdk_installed else "[yellow]pip install qai-hub[/yellow]"
+    )
+
+    # API Token
+    configured = st.get("configured", False)
+    token_display = st.get("token_display", "[Not Configured]")
+    t.add_row(
+        "API Credentials",
+        token_display,
+        "[bold green]Configured[/bold green]" if configured else "[red]Missing (Set QAI_HUB_API_TOKEN)[/red]"
+    )
+
+    # Connection Status
+    status_str = st.get("status", "UNKNOWN")
+    status_color = "bold green" if "ONLINE" in status_str else ("yellow" if "NOT CONFIGURED" in status_str else "bold red")
+    t.add_row("Cloud Service", f"[{status_color}]{status_str}[/{status_color}]", st.get("message", ""))
+
+    if "device_count" in st:
+        t.add_row("Physical Devices", f"{st['device_count']} cloud devices available", "[bold green]Online[/bold green]")
+
+    console.print(t)
+
+    if not configured:
+        console.print(Panel(
+            "[bold yellow]Qualcomm AI Hub Not Configured[/bold yellow]\n\n"
+            "To enable cloud benchmarking on physical Snapdragon X Elite / X Plus hardware:\n"
+            "1. Obtain an API token from [bold cyan]https://app.aihub.qualcomm.com[/bold cyan]\n"
+            "2. Run [bold green]python -m nibble aihub configure --token <YOUR_TOKEN>[/bold green]\n"
+            "   or set the environment variable: [bold green]$env:QAI_HUB_API_TOKEN=\"<YOUR_TOKEN>\"[/bold green]\n\n"
+            "[dim]Note: Local AMD CPU & DirectML GPU optimization works 100% offline without AI Hub.[/dim]",
+            box=box.ROUNDED
+        ))
+
+
+def cmd_aihub_configure(args):
+    """Configure Qualcomm AI Hub API credentials."""
+    import getpass
+    token = getattr(args, "token", None)
+    if not token:
+        try:
+            token = getpass.getpass("Enter Qualcomm AI Hub API Token: ").strip()
+        except (KeyboardInterrupt, EOFError):
+            console.print("\n[yellow]Configuration cancelled.[/yellow]")
+            return
+
+    if not token:
+        console.print("[bold red]Error: Token cannot be empty.[/bold red]")
+        return
+
+    qai_dir = Path.home() / ".qai_hub"
+    qai_dir.mkdir(parents=True, exist_ok=True)
+    ini_path = qai_dir / "client.ini"
+
+    content = f"[api]\napi_token = {token}\n"
+    with open(ini_path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    os.environ["QAI_HUB_API_TOKEN"] = token
+
+    masked = f"{token[:4]}****{token[-4:]}" if len(token) > 8 else "****"
+    console.print(Panel(
+        f"[bold green]Qualcomm AI Hub Credentials Saved Successfully[/bold green]\n\n"
+        f"Saved to: [cyan]{ini_path}[/cyan]\n"
+        f"Configured Token: [cyan]{masked}[/cyan]\n\n"
+        "You can now run [bold green]python -m nibble aihub devices[/bold green] to view available Snapdragon hardware.",
+        box=box.ROUNDED
+    ))
+
+
+def cmd_aihub_devices(args):
+    """List available physical Snapdragon devices on Qualcomm AI Hub."""
+    from nibble.qualcomm.aihub_client import QualcommAIHubClient, AIHubNotConfiguredError, AIHubExecutionError
+
+    client = QualcommAIHubClient()
+    flt = getattr(args, "filter", "") or ""
+
+    console.print(Panel.fit(
+        f"[bold cyan]Qualcomm AI Hub — Remote Physical Snapdragon Devices[/bold cyan]" +
+        (f" [dim](Filter: '{flt}')[/dim]" if flt else ""),
+        box=box.ROUNDED
+    ))
+
+    try:
+        devices = client.list_devices(name_filter=flt)
+        if not devices:
+            console.print(f"[yellow]No devices found matching '{flt}'.[/yellow]")
+            return
+
+        t = Table(box=box.SIMPLE_HEAVY)
+        t.add_column("Device Name", style="bold white")
+        t.add_column("OS", style="cyan")
+        t.add_column("Chipset", style="green")
+        t.add_column("NPU TOPS", style="bold magenta")
+        t.add_column("Status", style="bold")
+
+        for d in devices:
+            tops_str = f"{d.npu_tops:.0f} TOPS" if d.npu_tops else "—"
+            status_str = "[bold green]AVAILABLE[/bold green]" if d.is_available else "[dim]BUSY / OFFLINE[/dim]"
+            t.add_row(d.name, d.os, d.chipset, tops_str, status_str)
+
+        console.print(t)
+        console.print(f"[dim]Total: {len(devices)} physical Snapdragon devices queryable in Qualcomm cloud.[/dim]")
+    except AIHubNotConfiguredError as e:
+        console.print(f"[bold yellow]Qualcomm AI Hub Not Configured:[/bold yellow] {e}")
+        console.print("Run [bold green]python -m nibble aihub configure[/bold green] or set [bold green]QAI_HUB_API_TOKEN[/bold green].")
+    except AIHubExecutionError as e:
+        console.print(f"[bold red]Qualcomm AI Hub Query Error:[/bold red] {e}")
+
+
+def cmd_aihub_upload(args):
+    """Validate and upload ONNX model to Qualcomm AI Hub."""
+    from nibble.qualcomm.aihub_client import (
+        QualcommAIHubClient, AIHubNotConfiguredError,
+        AIHubModelValidationError, AIHubExecutionError
+    )
+
+    model_path = Path(args.model_path)
+    model_name = getattr(args, "name", None) or model_path.name
+    client = QualcommAIHubClient()
+
+    console.print(f"\n[bold cyan]Validating ONNX Model Integrity:[/bold cyan] {model_path.name}")
+    try:
+        meta, _ = client.validate_onnx_model(model_path)
+        console.print(f"[green]✓ Model integrity validated (SHA-256: {meta.sha256[:16]}...)[/green]")
+        console.print(f"[bold cyan]Uploading to Qualcomm AI Hub...[/bold cyan]")
+        uploaded = client.upload_model(model_path, model_name=model_name)
+
+        t = Table(title="Qualcomm AI Hub Model Upload Complete", box=box.ROUNDED)
+        t.add_column("Property", style="bold white")
+        t.add_column("Value", style="cyan")
+        t.add_row("Model Name", uploaded.name)
+        t.add_row("Remote Model ID", uploaded.model_id)
+        t.add_row("File Size", f"{uploaded.size_mb:.2f} MB")
+        t.add_row("SHA-256 Digest", uploaded.sha256)
+        t.add_row("Inputs", ", ".join(uploaded.input_names) or "—")
+        t.add_row("Outputs", ", ".join(uploaded.output_names) or "—")
+        t.add_row("Uploaded At", uploaded.uploaded_at or "Just now")
+        console.print(t)
+    except (AIHubNotConfiguredError, AIHubModelValidationError, AIHubExecutionError, FileNotFoundError) as e:
+        console.print(f"[bold red]Upload Failed:[/bold red] {e}")
+
+
+def cmd_aihub_profile(args):
+    """Profile ONNX model on a physical Snapdragon device via Qualcomm AI Hub."""
+    from nibble.qualcomm.aihub_client import (
+        QualcommAIHubClient, AIHubNotConfiguredError,
+        AIHubModelValidationError, AIHubExecutionError
+    )
+
+    model_path = Path(args.model_path)
+    device_name = getattr(args, "device", "Snapdragon X Elite CRD") or "Snapdragon X Elite CRD"
+    options = getattr(args, "options", "--compute_unit npu") or "--compute_unit npu"
+    no_wait = getattr(args, "no_wait", False)
+
+    client = QualcommAIHubClient()
+
+    console.print(Panel.fit(
+        f"[bold cyan]Qualcomm AI Hub Remote Device Profiling[/bold cyan]\n"
+        f"Target Device: [green]{device_name}[/green] | Compute Unit: [magenta]{options}[/magenta]",
+        box=box.ROUNDED
+    ))
+
+    try:
+        console.print(f"[bold]Submitting profile job for:[/bold] {model_path.name}")
+        job = client.submit_profile(model_path, device_name=device_name, options=options)
+        console.print(f"[green]Job submitted successfully:[/green] ID [cyan]{job.job_id}[/cyan]")
+        if job.url:
+            console.print(f"Qualcomm Dashboard: [link={job.url}]{job.url}[/link]")
+
+        if no_wait:
+            console.print("[dim]Submitted asynchronously (--no-wait requested).[/dim]")
+            return
+
+        console.print("[bold cyan]Polling Qualcomm AI Hub job until completion...[/bold cyan]")
+        completed = client.poll_job(job.job_id)
+        if completed.status == "FAILED":
+            console.print(f"[bold red]Remote Job Failed:[/bold red] {completed.error_message}")
+            return
+
+        console.print("[bold green]Profile completed! Downloading physical telemetry...[/bold green]")
+        res = client.get_profile_result(
+            job_id=job.job_id,
+            device_name=device_name,
+            model_name=model_path.name,
+            save_artifacts=True
+        )
+
+        t = Table(title=f"Qualcomm AI Hub Physical Telemetry [{res.execution_target}]", box=box.ROUNDED)
+        t.add_column("Metric / Field", style="bold white", width=26)
+        t.add_column("Physical Measurement", style="cyan")
+        t.add_column("Verification & Notes", style="green")
+
+        target_badge = (
+            f"[bold green]{res.execution_target}[/bold green]"
+            if "NPU" in res.execution_target
+            else f"[yellow]{res.execution_target}[/yellow]"
+        )
+        t.add_row("Measurement Type", "[bold cyan]ACTUAL_DEVICE_MEASUREMENT[/bold cyan]", "Physical Qualcomm Device")
+        t.add_row("Target Device", res.device_name, "Snapdragon Hardware")
+        t.add_row("Execution Target", target_badge, res.verification_notes)
+        t.add_row("Runtime", res.runtime, "Qualcomm Execution Stack")
+        t.add_row("Median Latency", f"{res.median_latency_ms} ms" if res.median_latency_ms else "—", "Physical Device Execution")
+        t.add_row("Throughput", f"{res.throughput_fps} FPS" if res.throughput_fps else "—", "Calculated (1000 / latency_ms)")
+        t.add_row("Peak Memory", f"{res.peak_memory_mb} MB" if res.peak_memory_mb else "—", "On-Device Peak Working Set")
+        t.add_row("NPU Acceleration", f"{res.npu_layers_count} / {res.total_layers_count} layers on NPU", f"{res.cpu_layers_count} CPU fallback layers")
+
+        console.print(t)
+        console.print(f"\n[bold green]Job Artifacts Saved:[/bold green] [cyan]reports/aihub/{job.job_id}/[/cyan]")
+        console.print("  • raw_result.json\n  • normalized_result.json\n  • summary.md")
+    except (AIHubNotConfiguredError, AIHubModelValidationError, AIHubExecutionError, FileNotFoundError, TimeoutError) as e:
+        console.print(f"[bold red]AI Hub Profiling Failed:[/bold red] {e}")
+
+
+def cmd_aihub(args):
+    """Handle Qualcomm AI Hub cloud platform subcommands."""
+    subcmd = getattr(args, "aihub_subcommand", getattr(args, "aihub_command", "status"))
+    if not subcmd or subcmd == "status":
+        cmd_aihub_status(args)
+    elif subcmd == "configure":
+        cmd_aihub_configure(args)
+    elif subcmd == "devices":
+        cmd_aihub_devices(args)
+    elif subcmd == "upload":
+        cmd_aihub_upload(args)
+    elif subcmd in ("profile", "benchmark"):
+        cmd_aihub_profile(args)
+    else:
+        console.print(f"[bold red]Unknown aihub subcommand: {subcmd}[/bold red]")
+
+
+def cmd_compare_local_aihub(args):
+    """Compare local host execution vs Qualcomm AI Hub physical Snapdragon NPU."""
+    from app.core.hardware_manager import HardwareManager
+    from app.core.benchmark_manager import BenchmarkManager
+    from app.models.model_inspector import ModelInspector
+    from app.models.compatibility import SnapdragonCompatibilityEngine
+    from nibble.qualcomm.aihub_client import QualcommAIHubClient
+
+    model_path = Path(args.model_path)
+    if not model_path.exists():
+        console.print(f"[bold red]Error: Model not found: {model_path}[/bold red]")
+        sys.exit(1)
+
+    device_name = getattr(args, "device", "Snapdragon X Elite CRD") or "Snapdragon X Elite CRD"
+    backend = getattr(args, "backend", "CPU")
+    warmup = getattr(args, "warmup", 10)
+    runs = getattr(args, "runs", 50)
+
+    hw = HardwareManager.get_hardware_profile()
+    hub_client = QualcommAIHubClient()
+
+    console.print(Panel.fit(
+        f"[bold cyan]Local Host AMD vs Qualcomm AI Hub Snapdragon Comparison[/bold cyan]\n"
+        f"Model: [bold white]{model_path.name}[/bold white] | Local Backend: [cyan]{backend}[/cyan] | Remote Device: [magenta]{device_name}[/magenta]",
+        box=box.ROUNDED
+    ))
+
+    # 1. Local Host Benchmark [LOCAL_MEASUREMENT]
+    console.print("\n[bold]1. Executing Local Host Benchmark on AMD Environment...[/bold]")
+    b_inst = BenchmarkManager.get_backend(backend)
+    local_bm = b_inst.benchmark(model_path, warmup_runs=warmup, measured_runs=runs)
+    local_stats = local_bm.get("stats", {})
+    local_median = local_stats.get("median_ms", 0.0)
+    local_fps = local_stats.get("throughput_fps", 0.0)
+    local_mem = local_bm.get("peak_memory_mb", 0.0)
+    console.print(f"[green]✓ Local benchmark completed: {local_median:.3f} ms ({local_fps:.1f} FPS)[/green]")
+
+    # 2. Remote Cloud or Static Compatibility
+    hub_status = hub_client.get_status()
+    has_cloud_profile = False
+    aihub_res = None
+
+    if hub_status.get("configured", False):
+        console.print(f"\n[bold]2. Submitting Cloud Profiling Job to Qualcomm AI Hub ({device_name})...[/bold]")
+        try:
+            job = hub_client.submit_profile(model_path, device_name=device_name)
+            console.print(f"[dim]Polling job {job.job_id}...[/dim]")
+            hub_client.poll_job(job.job_id)
+            aihub_res = hub_client.get_profile_result(job.job_id, device_name=device_name, model_name=model_path.name)
+            has_cloud_profile = True
+            console.print("[green]✓ Physical device telemetry retrieved from Qualcomm AI Hub.[/green]")
+        except Exception as e:
+            console.print(f"[yellow]Cloud profiling failed ({e}). Falling back to static compatibility analysis.[/yellow]")
+            has_cloud_profile = False
+
+    if not has_cloud_profile:
+        console.print("\n[bold]2. Evaluating Snapdragon Compatibility via Static Graph Inspection...[/bold]")
+        insp = ModelInspector()
+        meta = insp.inspect(model_path)
+        compat = SnapdragonCompatibilityEngine.analyze(meta)
+        console.print(f"[green]✓ Static compatibility score: {compat.weighted_npu_score}% Hexagon NPU readiness[/green]")
+
+    # 3. Side-by-side Rich Table
+    t = Table(title="Execution Environment & Performance Comparison", box=box.ROUNDED)
+    t.add_column("Dimension / Metric", style="bold white", width=22)
+    t.add_column("Local Host (AMD Machine)", style="cyan", width=30)
+    t.add_column("Snapdragon Target (Cloud / Static)", style="magenta", width=34)
+
+    t.add_row("Measurement Type", "[bold cyan]LOCAL_MEASUREMENT[/bold cyan]", "[bold magenta]ACTUAL_DEVICE_MEASUREMENT[/bold magenta]" if has_cloud_profile else "[yellow]STATIC_ANALYSIS[/yellow]")
+    t.add_row("Hardware Vendor", hw.cpu_vendor, "Qualcomm")
+    t.add_row("Hardware Model", hw.cpu_model, device_name)
+    t.add_row("Architecture", hw.cpu_arch, "ARM64 (Qualcomm Oryon / Hexagon)")
+    t.add_row("Execution Provider", local_bm.get("backend", backend), aihub_res.runtime if has_cloud_profile else "QNN Execution Provider (HTP)")
+
+    if has_cloud_profile:
+        t.add_row("Execution Target", "Host CPU / GPU", f"[bold green]{aihub_res.execution_target}[/bold green]")
+        t.add_row("Median Latency", f"{local_median:.3f} ms", f"{aihub_res.median_latency_ms} ms" if aihub_res.median_latency_ms else "—")
+        t.add_row("Throughput", f"{local_fps:.1f} FPS", f"{aihub_res.throughput_fps} FPS" if aihub_res.throughput_fps else "—")
+        t.add_row("Memory Footprint", f"{local_mem:.1f} MB", f"{aihub_res.peak_memory_mb} MB" if aihub_res.peak_memory_mb else "—")
+        t.add_row("Layer Acceleration", "All Host Ops", f"{aihub_res.npu_layers_count} / {aihub_res.total_layers_count} NPU Ops")
+    else:
+        t.add_row("Execution Target", "Host CPU / GPU", "Qualcomm Hexagon NPU (Projected)")
+        t.add_row("Median Latency", f"{local_median:.3f} ms", "Requires QAI_HUB_API_TOKEN for actual device ms")
+        t.add_row("Throughput", f"{local_fps:.1f} FPS", "Requires QAI_HUB_API_TOKEN for actual device FPS")
+        t.add_row("Static NPU Score", "—", f"{compat.weighted_npu_score}% weighted compatibility")
+        t.add_row("Supported Operators", "—", f"{compat.supported_nodes_count} / {compat.total_nodes} nodes supported")
+
+    console.print(t)
+
+    console.print(Panel(
+        "[bold green]Verified Hardware Transparency Notice:[/bold green]\n"
+        "• Local measurements were performed directly on the AMD host development PC.\n"
+        + ("• Remote measurements were obtained from a genuine physical Qualcomm Snapdragon device in Qualcomm AI Hub.\n"
+           if has_cloud_profile else
+           "• Snapdragon metrics shown are derived from static graph compatibility analysis. No simulated or fabricated NPU latency was reported.\n"
+           "  To obtain physical on-device measurements, configure Qualcomm AI Hub credentials using 'python -m nibble aihub configure'."),
+        box=box.ROUNDED
+    ))
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="snapforge",

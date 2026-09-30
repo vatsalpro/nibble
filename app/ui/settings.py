@@ -238,10 +238,25 @@ class SettingsView(QWidget):
         client = QualcommAIHubClient(api_token=token)
         status_info = client.get_status()
 
-        if status_info.get("configured") and status_info.get("status") == "Online":
-            self.lbl_hub_status.setText(f"Status: Online ({status_info.get('user', 'User')})")
+        if status_info.get("configured") and "ONLINE" in status_info.get("status", "").upper():
+            if token:
+                try:
+                    qai_dir = Path.home() / ".qai_hub"
+                    qai_dir.mkdir(parents=True, exist_ok=True)
+                    with open(qai_dir / "client.ini", "w", encoding="utf-8") as f:
+                        f.write(f"[api]\napi_token = {token}\n")
+                    os.environ["QAI_HUB_API_TOKEN"] = token
+                except Exception:
+                    pass
+
+            dev_cnt = status_info.get("device_count", 0)
+            self.lbl_hub_status.setText(f"Status: Authenticated & Online ({dev_cnt} cloud devices available)")
             self.lbl_hub_status.setStyleSheet("color: #2EA043; font-weight: bold;")
-            QMessageBox.information(self, "Qualcomm AI Hub", "Successfully authenticated with Qualcomm AI Hub!")
+            QMessageBox.information(
+                self,
+                "Qualcomm AI Hub",
+                f"Successfully connected to Qualcomm AI Hub!\n{dev_cnt} Snapdragon cloud devices available for physical profiling."
+            )
         else:
             self.lbl_hub_status.setText(f"Status: {status_info.get('status')} — {status_info.get('message')}")
             self.lbl_hub_status.setStyleSheet("color: #F85149; font-weight: bold;")

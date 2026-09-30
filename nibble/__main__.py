@@ -30,6 +30,8 @@ from app.cli import (
     cmd_compare,
     cmd_report,
     cmd_gui,
+    cmd_aihub,
+    cmd_compare_local_aihub,
 )
 
 
@@ -102,6 +104,57 @@ def main():
     # gui
     p_gui = subparsers.add_parser("gui", help="Launch Nibble PySide6 desktop interface")
     p_gui.set_defaults(func=cmd_gui)
+
+    # aihub
+    p_hub = subparsers.add_parser("aihub", help="Qualcomm AI Hub cloud validation & physical device profiling")
+    hub_sub = p_hub.add_subparsers(dest="aihub_subcommand", help="AI Hub action")
+
+    # aihub status
+    p_hub_st = hub_sub.add_parser("status", help="Show Qualcomm AI Hub connection and authentication status")
+    p_hub_st.set_defaults(func=cmd_aihub)
+
+    # aihub configure
+    p_hub_cfg = hub_sub.add_parser("configure", help="Configure Qualcomm AI Hub API token")
+    p_hub_cfg.add_argument("--token", default=None, help="Qualcomm AI Hub API token")
+    p_hub_cfg.set_defaults(func=cmd_aihub)
+
+    # aihub devices
+    p_hub_dev = hub_sub.add_parser("devices", help="List available physical Snapdragon devices in Qualcomm AI Hub")
+    p_hub_dev.add_argument("--filter", default="", help="Optional substring filter for device name")
+    p_hub_dev.set_defaults(func=cmd_aihub)
+
+    # aihub upload
+    p_hub_up = hub_sub.add_parser("upload", help="Upload ONNX model to Qualcomm AI Hub")
+    p_hub_up.add_argument("model_path", help="Path to local ONNX model")
+    p_hub_up.add_argument("--name", default=None, help="Optional remote model name")
+    p_hub_up.set_defaults(func=cmd_aihub)
+
+    # aihub profile
+    p_hub_prof = hub_sub.add_parser("profile", help="Profile ONNX model on physical Snapdragon hardware")
+    p_hub_prof.add_argument("model_path", help="Path to local ONNX model or remote model ID")
+    p_hub_prof.add_argument("--device", default="Snapdragon X Elite CRD", help="Target device name")
+    p_hub_prof.add_argument("--options", default="--compute_unit npu", help="Compiler and runtime options")
+    p_hub_prof.add_argument("--no-wait", action="store_true", help="Submit asynchronously without polling")
+    p_hub_prof.set_defaults(func=cmd_aihub)
+
+    # aihub benchmark
+    p_hub_bm = hub_sub.add_parser("benchmark", help="Benchmark ONNX model on physical Snapdragon hardware")
+    p_hub_bm.add_argument("model_path", help="Path to local ONNX model or remote model ID")
+    p_hub_bm.add_argument("--device", default="Snapdragon X Elite CRD", help="Target device name")
+    p_hub_bm.add_argument("--options", default="--compute_unit npu", help="Compiler and runtime options")
+    p_hub_bm.add_argument("--no-wait", action="store_true", help="Submit asynchronously without polling")
+    p_hub_bm.set_defaults(func=cmd_aihub)
+
+    p_hub.set_defaults(func=cmd_aihub)
+
+    # compare-local-aihub
+    p_cmp_hub = subparsers.add_parser("compare-local-aihub", help="Compare local AMD execution vs Qualcomm AI Hub physical Snapdragon NPU")
+    p_cmp_hub.add_argument("model_path", help="Path to ONNX model")
+    p_cmp_hub.add_argument("--device", default="Snapdragon X Elite CRD", help="Target Snapdragon device on AI Hub")
+    p_cmp_hub.add_argument("--backend", default="CPU", choices=["CPU", "GPU", "cpu", "gpu"], help="Local execution backend")
+    p_cmp_hub.add_argument("--warmup", type=int, default=10, help="Warmup iterations")
+    p_cmp_hub.add_argument("--runs", type=int, default=50, help="Measured iterations")
+    p_cmp_hub.set_defaults(func=cmd_compare_local_aihub)
 
     if len(sys.argv) == 1:
         cmd_gui(None)

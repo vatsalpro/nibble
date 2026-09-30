@@ -33,6 +33,7 @@ logs/
 
 # Dynamic benchmark & report artifacts (keep sample/template)
 reports/benchmark_*
+reports/aihub/
 reports/*.pdf
 reports/*.csv
 reports/*.json
