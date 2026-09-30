@@ -484,7 +484,12 @@ def cmd_aihub_configure(args):
     qai_dir.mkdir(parents=True, exist_ok=True)
     ini_path = qai_dir / "client.ini"
 
-    content = f"[api]\napi_token = {token}\n"
+    content = (
+        f"[api]\n"
+        f"api_token = {token}\n"
+        f"api_url = https://workbench.aihub.qualcomm.com\n"
+        f"web_url = https://workbench.aihub.qualcomm.com\n"
+    )
     with open(ini_path, "w", encoding="utf-8") as f:
         f.write(content)
 
@@ -595,6 +600,13 @@ def cmd_aihub_profile(args):
 
     try:
         console.print(f"[bold]Submitting profile job for:[/bold] {model_path.name}")
+        model_sha256 = ""
+        try:
+            meta, _ = client.validate_onnx_model(model_path)
+            model_sha256 = meta.sha256
+        except Exception:
+            pass
+
         job = client.submit_profile(model_path, device_name=device_name, options=options)
         console.print(f"[green]Job submitted successfully:[/green] ID [cyan]{job.job_id}[/cyan]")
         if job.url:
@@ -615,6 +627,7 @@ def cmd_aihub_profile(args):
             job_id=job.job_id,
             device_name=device_name,
             model_name=model_path.name,
+            model_sha256=model_sha256,
             save_artifacts=True
         )
 
@@ -629,6 +642,7 @@ def cmd_aihub_profile(args):
             else f"[yellow]{res.execution_target}[/yellow]"
         )
         t.add_row("Measurement Type", "[bold cyan]ACTUAL_DEVICE_MEASUREMENT[/bold cyan]", "Physical Qualcomm Device")
+        t.add_row("Job ID", res.job_id, "Qualcomm AI Hub Cloud")
         t.add_row("Target Device", res.device_name, "Snapdragon Hardware")
         t.add_row("Execution Target", target_badge, res.verification_notes)
         t.add_row("Runtime", res.runtime, "Qualcomm Execution Stack")
@@ -644,6 +658,54 @@ def cmd_aihub_profile(args):
         console.print(f"[bold red]AI Hub Profiling Failed:[/bold red] {e}")
 
 
+def cmd_aihub_result(args):
+    """Retrieve and display telemetry for an existing Qualcomm AI Hub job ID."""
+    from nibble.qualcomm.aihub_client import QualcommAIHubClient
+
+    job_id = args.job_id
+    device_name = getattr(args, "device", "Snapdragon X Elite CRD") or "Snapdragon X Elite CRD"
+    client = QualcommAIHubClient()
+
+    console.print(Panel.fit(
+        f"[bold cyan]Qualcomm AI Hub — Retrieve Job Telemetry[/bold cyan]\n"
+        f"Job ID: [green]{job_id}[/green] | Target Device: [magenta]{device_name}[/magenta]",
+        box=box.ROUNDED
+    ))
+
+    try:
+        res = client.get_profile_result(
+            job_id=job_id,
+            device_name=device_name,
+            save_artifacts=True
+        )
+
+        t = Table(title=f"Qualcomm AI Hub Physical Telemetry [{res.execution_target}]", box=box.ROUNDED)
+        t.add_column("Metric / Field", style="bold white", width=26)
+        t.add_column("Physical Measurement", style="cyan")
+        t.add_column("Verification & Notes", style="green")
+
+        target_badge = (
+            f"[bold green]{res.execution_target}[/bold green]"
+            if "NPU" in res.execution_target
+            else f"[yellow]{res.execution_target}[/yellow]"
+        )
+        t.add_row("Measurement Type", "[bold cyan]ACTUAL_DEVICE_MEASUREMENT[/bold cyan]", "Physical Qualcomm Device")
+        t.add_row("Job ID", res.job_id, "Qualcomm AI Hub Cloud")
+        t.add_row("Target Device", res.device_name, "Snapdragon Hardware")
+        t.add_row("Execution Target", target_badge, res.verification_notes)
+        t.add_row("Runtime", res.runtime, "Qualcomm Execution Stack")
+        t.add_row("Median Latency", f"{res.median_latency_ms} ms" if res.median_latency_ms else "—", "Physical Device Execution")
+        t.add_row("Throughput", f"{res.throughput_fps} FPS" if res.throughput_fps else "—", "Calculated (1000 / latency_ms)")
+        t.add_row("Peak Memory", f"{res.peak_memory_mb} MB" if res.peak_memory_mb else "—", "On-Device Peak Working Set")
+        t.add_row("NPU Acceleration", f"{res.npu_layers_count} / {res.total_layers_count} layers on NPU", f"{res.cpu_layers_count} CPU fallback layers")
+
+        console.print(t)
+        console.print(f"\n[bold green]Job Artifacts Saved:[/bold green] [cyan]reports/aihub/{res.job_id}/[/cyan]")
+        console.print("  • raw_result.json\n  • normalized_result.json\n  • summary.md")
+    except Exception as e:
+        console.print(f"[bold red]Failed to retrieve job {job_id}:[/bold red] {e}")
+
+
 def cmd_aihub(args):
     """Handle Qualcomm AI Hub cloud platform subcommands."""
     subcmd = getattr(args, "aihub_subcommand", getattr(args, "aihub_command", "status"))
@@ -657,6 +719,8 @@ def cmd_aihub(args):
         cmd_aihub_upload(args)
     elif subcmd in ("profile", "benchmark"):
         cmd_aihub_profile(args)
+    elif subcmd in ("result", "get"):
+        cmd_aihub_result(args)
     else:
         console.print(f"[bold red]Unknown aihub subcommand: {subcmd}[/bold red]")
 
@@ -703,15 +767,41 @@ def cmd_compare_local_aihub(args):
     has_cloud_profile = False
     aihub_res = None
 
+    job_id = getattr(args, "job_id", None)
     if hub_status.get("configured", False):
-        console.print(f"\n[bold]2. Submitting Cloud Profiling Job to Qualcomm AI Hub ({device_name})...[/bold]")
         try:
-            job = hub_client.submit_profile(model_path, device_name=device_name)
-            console.print(f"[dim]Polling job {job.job_id}...[/dim]")
-            hub_client.poll_job(job.job_id)
-            aihub_res = hub_client.get_profile_result(job.job_id, device_name=device_name, model_name=model_path.name)
-            has_cloud_profile = True
-            console.print("[green]✓ Physical device telemetry retrieved from Qualcomm AI Hub.[/green]")
+            meta = None
+            try:
+                meta, _ = hub_client.validate_onnx_model(model_path)
+            except Exception:
+                pass
+            model_sha256 = meta.sha256 if meta else ""
+
+            if job_id:
+                console.print(f"\n[bold]2. Retrieving Existing Cloud Profile Job ({job_id}) from Qualcomm AI Hub...[/bold]")
+                aihub_res = hub_client.get_profile_result(
+                    job_id=job_id,
+                    device_name=device_name,
+                    model_name=model_path.name,
+                    model_sha256=model_sha256,
+                    save_artifacts=True
+                )
+                has_cloud_profile = True
+                console.print("[green]✓ Physical device telemetry retrieved from Qualcomm AI Hub.[/green]")
+            else:
+                console.print(f"\n[bold]2. Submitting Cloud Profiling Job to Qualcomm AI Hub ({device_name})...[/bold]")
+                job = hub_client.submit_profile(model_path, device_name=device_name)
+                console.print(f"[dim]Polling job {job.job_id}...[/dim]")
+                hub_client.poll_job(job.job_id)
+                aihub_res = hub_client.get_profile_result(
+                    job.job_id,
+                    device_name=device_name,
+                    model_name=model_path.name,
+                    model_sha256=model_sha256,
+                    save_artifacts=True
+                )
+                has_cloud_profile = True
+                console.print("[green]✓ Physical device telemetry retrieved from Qualcomm AI Hub.[/green]")
         except Exception as e:
             console.print(f"[yellow]Cloud profiling failed ({e}). Falling back to static compatibility analysis.[/yellow]")
             has_cloud_profile = False

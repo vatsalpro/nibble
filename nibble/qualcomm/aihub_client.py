@@ -205,7 +205,13 @@ class QualcommAIHubClient:
 
         client = self._client or self._hub.Client()
         try:
-            hub_devices = client.get_devices(name=name_filter)
+            hub_devices = client.get_devices()
+            if name_filter:
+                flt = name_filter.lower().strip()
+                hub_devices = [
+                    d for d in hub_devices
+                    if flt in getattr(d, "name", str(d)).lower() or any(flt in str(a).lower() for a in getattr(d, "attributes", []))
+                ]
         except Exception as e:
             raise AIHubExecutionError(f"Failed to query Qualcomm AI Hub devices: {e}")
 
@@ -214,6 +220,11 @@ class QualcommAIHubClient:
             dev_name = getattr(d, "name", str(d))
             dev_os = getattr(d, "os", "Qualcomm Platform")
             attrs = list(getattr(d, "attributes", []))
+            if any("os:windows" in a for a in attrs):
+                dev_os = f"Windows {dev_os} ARM64"
+            elif any("os:android" in a for a in attrs):
+                dev_os = f"Android {dev_os}"
+
             chip = "Snapdragon"
             for a in attrs:
                 if a.startswith("chipset:"):
@@ -293,7 +304,7 @@ class QualcommAIHubClient:
     def poll_job(
         self,
         job_id: str,
-        timeout_sec: int = 300,
+        timeout_sec: int = 600,
         interval_sec: int = 5
     ) -> AIHubJob:
         """Poll job status until completion, failure, or timeout."""
@@ -351,6 +362,34 @@ class QualcommAIHubClient:
         client = self._client or self._hub.Client()
         job = client.get_job(job_id)
 
+        # Resolve model_name and device_name from remote job if defaults were provided
+        if not device_name or device_name == "Snapdragon Device":
+            device_name = getattr(getattr(job, "device", None), "name", None) or device_name
+        if not model_name or model_name == "Model":
+            model_name = getattr(getattr(job, "model", None), "name", None) or getattr(job, "name", "Model")
+
+        # Try to resolve model sha256 if empty
+        if not model_sha256 and model_name and model_name != "Model":
+            possible_paths = [Path(model_name), Path("models") / model_name]
+            for p in possible_paths:
+                if p.exists():
+                    try:
+                        import hashlib
+                        with open(p, "rb") as f:
+                            model_sha256 = hashlib.sha256(f.read()).hexdigest()
+                        break
+                    except Exception:
+                        pass
+
+        # Detect precision
+        precision = "Unknown"
+        if "fp16" in model_name.lower():
+            precision = "FP16"
+        elif "int8" in model_name.lower():
+            precision = "INT8"
+        elif "fp32" in model_name.lower():
+            precision = "FP32"
+
         try:
             raw_profile = job.download_profile()
             if not isinstance(raw_profile, dict):
@@ -363,7 +402,8 @@ class QualcommAIHubClient:
             job_id=job_id,
             device_name=device_name,
             model_name=model_name,
-            model_sha256=model_sha256
+            model_sha256=model_sha256,
+            precision=precision
         )
 
         if save_artifacts:

@@ -143,7 +143,11 @@ def main():
     p_hub_bm.add_argument("--device", default="Snapdragon X Elite CRD", help="Target device name")
     p_hub_bm.add_argument("--options", default="--compute_unit npu", help="Compiler and runtime options")
     p_hub_bm.add_argument("--no-wait", action="store_true", help="Submit asynchronously without polling")
-    p_hub_bm.set_defaults(func=cmd_aihub)
+    # aihub result
+    p_hub_res = hub_sub.add_parser("result", help="Retrieve and export results for an existing AI Hub job ID")
+    p_hub_res.add_argument("job_id", help="Qualcomm AI Hub job ID (e.g., j57eqe89p)")
+    p_hub_res.add_argument("--device", default="Snapdragon X Elite CRD", help="Target device name")
+    p_hub_res.set_defaults(func=cmd_aihub)
 
     p_hub.set_defaults(func=cmd_aihub)
 
@@ -151,6 +155,7 @@ def main():
     p_cmp_hub = subparsers.add_parser("compare-local-aihub", help="Compare local AMD execution vs Qualcomm AI Hub physical Snapdragon NPU")
     p_cmp_hub.add_argument("model_path", help="Path to ONNX model")
     p_cmp_hub.add_argument("--device", default="Snapdragon X Elite CRD", help="Target Snapdragon device on AI Hub")
+    p_cmp_hub.add_argument("--job-id", default=None, help="Existing Qualcomm AI Hub job ID (optional)")
     p_cmp_hub.add_argument("--backend", default="CPU", choices=["CPU", "GPU", "cpu", "gpu"], help="Local execution backend")
     p_cmp_hub.add_argument("--warmup", type=int, default=10, help="Warmup iterations")
     p_cmp_hub.add_argument("--runs", type=int, default=50, help="Measured iterations")

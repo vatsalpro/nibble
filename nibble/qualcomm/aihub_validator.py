@@ -45,7 +45,13 @@ class AIHubValidator:
                 return 0.0
 
         # Check per-layer / per-node execution details first to get exact layer counts
-        layers = raw_data.get("layers") or raw_data.get("execution_detail", {}).get("layers") or raw_data.get("nodes", [])
+        layers = raw_data.get("layers")
+        if not layers and isinstance(raw_data.get("execution_detail"), list):
+            layers = raw_data["execution_detail"]
+        elif not layers and isinstance(raw_data.get("execution_detail"), dict):
+            layers = raw_data["execution_detail"].get("layers")
+        if not layers:
+            layers = raw_data.get("nodes", [])
         npu_count = 0
         cpu_count = 0
         gpu_count = 0

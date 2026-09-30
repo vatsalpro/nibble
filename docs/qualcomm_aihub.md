@@ -165,3 +165,31 @@ reports/aihub/<job_id>/
   "timestamp_utc": "2026-09-30T15:20:00Z"
 }
 ```
+
+---
+
+## 7. Verified Empirical Hardware Runs
+
+The following profiling jobs were successfully submitted, executed, and verified on real physical Qualcomm hardware via Qualcomm AI Hub:
+
+### Benchmark 1: FP32 CNN Baseline (`test_cnn.onnx`)
+* **Job ID:** `j57eqe89p`
+* **Target Hardware:** `Snapdragon X Elite CRD` (`Windows 11 ARM64`, `qualcomm-snapdragon-x-elite`, `45 TOPS`)
+* **Remote Model ID:** `mmrg9x1xq`
+* **Execution Target:** **`NPU_CONFIRMED`** (11/11 layers executed on Hexagon HTP / NPU, 0 CPU fallback)
+* **Median Latency:** `0.0460 ms` (`46.0 µs`)
+* **Throughput:** `21,739.1 FPS`
+* **Peak Memory:** `28.21 MB`
+* **Local AMD Host Comparison:** `0.0830 ms` (`12,062.7 FPS`) on AMD Ryzen 5 8540U CPU (`LOCAL_MEASUREMENT`) vs `0.0460 ms` (`21,739.1 FPS`) on Hexagon NPU (`ACTUAL_DEVICE_MEASUREMENT`)
+
+### Benchmark 2: FP16 Optimized CNN (`test_cnn_fp16.onnx`)
+* **Job ID:** `jgzl1lqx5`
+* **Target Hardware:** `Snapdragon X Elite CRD` (`Windows 11 ARM64`, `qualcomm-snapdragon-x-elite`, `45 TOPS`)
+* **Remote Model ID:** `mnwvwoo3q`
+* **SHA-256 Digest:** `4ed9d72650c53371c01f02be51bca1340cf729902c7cad3857a62a6f36794b69`
+* **Execution Target:** **`NPU_CONFIRMED`** (11/11 layers executed on Hexagon HTP / NPU, 0 CPU fallback)
+* **Median Latency:** `0.0445 ms` (`44.5 µs`)
+* **Throughput:** `22,471.9 FPS`
+* **Peak Memory:** `28.26 MB`
+* **Local AMD Host Comparison:** `0.0980 ms` (`10,245.9 FPS`) on AMD Ryzen 5 8540U CPU (`LOCAL_MEASUREMENT`) vs `0.0445 ms` (`22,471.9 FPS`) on Hexagon NPU (`ACTUAL_DEVICE_MEASUREMENT`)
+

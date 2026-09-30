@@ -34,25 +34,31 @@ class AIHubResultManager:
         target, notes, npu_l, cpu_l, tot_l = AIHubValidator.verify_execution_target(raw_result)
 
         # Extract timing (handling seconds, milliseconds, or microseconds from various hub schemas)
-        timing = raw_result.get("execution_summary", {}) or raw_result.get("timing", {}) or raw_result
+        import statistics
+        timing = raw_result.get("execution_summary", {}) if isinstance(raw_result.get("execution_summary"), dict) else (raw_result.get("timing", {}) or raw_result)
         latency_ms = None
-        if "inference_time" in timing and timing["inference_time"] is not None:
-            # Check unit: if microseconds (> 1000 for a tiny model), or explicit
+        if "all_inference_times" in timing and timing["all_inference_times"]:
+            median_us = float(statistics.median(timing["all_inference_times"]))
+            latency_ms = round(median_us / 1000.0, 4)
+        elif "inference_time" in timing and timing["inference_time"] is not None:
             val = float(timing["inference_time"])
-            if "us" in str(timing.get("time_unit", "")).lower() or val > 50000:
-                latency_ms = round(val / 1000.0, 3)
+            if "us" in str(timing.get("time_unit", "")).lower() or val > 500:
+                latency_ms = round(val / 1000.0, 4)
             else:
-                latency_ms = round(val, 3)
+                latency_ms = round(val, 4)
         elif "estimated_inference_time" in timing and timing["estimated_inference_time"] is not None:
             val = float(timing["estimated_inference_time"])
-            latency_ms = round(val / 1000.0, 3) if val > 1000 else round(val, 3)
+            # Qualcomm AI Hub estimated_inference_time is reported in microseconds
+            latency_ms = round(val / 1000.0, 4) if val > 20 else round(val, 4)
         elif "median_latency_ms" in raw_result and raw_result["median_latency_ms"] is not None:
-            latency_ms = round(float(raw_result["median_latency_ms"]), 3)
+            latency_ms = round(float(raw_result["median_latency_ms"]), 4)
 
         # Extract memory
-        mem_info = raw_result.get("memory", {}) or raw_result.get("peak_memory", {}) or raw_result
+        mem_info = raw_result.get("memory", {}) if isinstance(raw_result.get("memory"), dict) else (raw_result.get("peak_memory", {}) or raw_result)
         memory_mb = None
-        if "peak_memory_bytes" in mem_info and mem_info["peak_memory_bytes"] is not None:
+        if "estimated_inference_peak_memory" in timing and timing["estimated_inference_peak_memory"] is not None:
+            memory_mb = round(float(timing["estimated_inference_peak_memory"]) / (1024.0 * 1024.0), 2)
+        elif "peak_memory_bytes" in mem_info and mem_info["peak_memory_bytes"] is not None:
             memory_mb = round(float(mem_info["peak_memory_bytes"]) / (1024.0 * 1024.0), 2)
         elif "peak_memory_mb" in raw_result and raw_result["peak_memory_mb"] is not None:
             memory_mb = round(float(raw_result["peak_memory_mb"]), 2)
