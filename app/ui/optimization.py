@@ -76,9 +76,10 @@ class OptimizationView(QWidget):
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
         container = QWidget()
+        container.setMinimumWidth(1160)
         main_layout = QVBoxLayout(container)
         main_layout.setContentsMargins(28, 24, 28, 28)
         main_layout.setSpacing(16)

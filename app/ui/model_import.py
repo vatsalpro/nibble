@@ -35,9 +35,10 @@ class ModelImportView(QWidget):
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
         container = QWidget()
+        container.setMinimumWidth(1160)
         layout = QVBoxLayout(container)
         layout.setContentsMargins(28, 24, 28, 28)
         layout.setSpacing(18)

@@ -33,9 +33,10 @@ class HardwareView(QWidget):
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
         container = QWidget()
+        container.setMinimumWidth(1160)
         main_layout = QVBoxLayout(container)
         main_layout.setContentsMargins(28, 24, 28, 28)
         main_layout.setSpacing(18)
@@ -137,6 +138,7 @@ class HardwareView(QWidget):
         self.table_hw.setSelectionBehavior(QTableWidget.SelectRows)
         self.table_hw.setFocusPolicy(Qt.NoFocus)
         self.table_hw.setAlternatingRowColors(True)
+        self.table_hw.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.table_hw.setMinimumHeight(420)
         main_layout.addWidget(self.table_hw, stretch=1)
         self.animated_cards.append(self.table_hw)

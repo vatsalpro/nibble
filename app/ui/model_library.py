@@ -36,9 +36,10 @@ class ModelLibraryView(QWidget):
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
         container = QWidget()
+        container.setMinimumWidth(1160)
         main_layout = QVBoxLayout(container)
         main_layout.setContentsMargins(28, 24, 28, 28)
         main_layout.setSpacing(18)
@@ -84,6 +85,7 @@ class ModelLibraryView(QWidget):
         self.table_catalog.setSelectionBehavior(QTableWidget.SelectRows)
         self.table_catalog.setFocusPolicy(Qt.NoFocus)
         self.table_catalog.setAlternatingRowColors(True)
+        self.table_catalog.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.table_catalog.setMinimumHeight(440)
         main_layout.addWidget(self.table_catalog, stretch=1)
         self.animated_cards.append(self.table_catalog)

@@ -93,6 +93,29 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
     height: 0px;
 }}
 
+/* Refined, smooth horizontal scrollbar */
+QScrollBar:horizontal {{
+    border: none;
+    background: rgba(0, 0, 0, 0.04);
+    height: 10px;
+    margin: 2px 6px 2px 6px;
+    border-radius: 5px;
+}}
+
+QScrollBar::handle:horizontal {{
+    background: #CBD5E1;
+    min-width: 36px;
+    border-radius: 4px;
+}}
+
+QScrollBar::handle:horizontal:hover {{
+    background: #0284C7;
+}}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
+    width: 0px;
+}}
+
 /* Sidebar Navigation (Clean macOS / Windows 11 Light) */
 QFrame#SidebarFrame {{
     background-color: #F1F5F9;
@@ -408,6 +431,29 @@ QScrollBar::handle:vertical:hover {{
 
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
     height: 0px;
+}}
+
+/* Refined, smooth horizontal scrollbar */
+QScrollBar:horizontal {{
+    border: none;
+    background: rgba(255, 255, 255, 0.04);
+    height: 10px;
+    margin: 2px 6px 2px 6px;
+    border-radius: 5px;
+}}
+
+QScrollBar::handle:horizontal {{
+    background: #242E3E;
+    min-width: 36px;
+    border-radius: 4px;
+}}
+
+QScrollBar::handle:horizontal:hover {{
+    background: #38BDF8;
+}}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
+    width: 0px;
 }}
 
 /* Sidebar Navigation */

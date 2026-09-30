@@ -32,7 +32,16 @@ class ModelAnalysisView(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        main_layout = QVBoxLayout(self)
+        root_layout = QVBoxLayout(self)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+
+        container = QWidget()
+        container.setMinimumWidth(1160)
+        main_layout = QVBoxLayout(container)
         main_layout.setContentsMargins(24, 24, 24, 24)
         main_layout.setSpacing(16)
 
@@ -114,6 +123,7 @@ class ModelAnalysisView(QWidget):
         self.table_nodes.setSelectionBehavior(QTableWidget.SelectRows)
         self.table_nodes.setFocusPolicy(Qt.NoFocus)
         self.table_nodes.setAlternatingRowColors(True)
+        self.table_nodes.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.table_nodes.itemSelectionChanged.connect(self._on_node_selected)
         left_layout.addWidget(self.table_nodes)
 
@@ -150,6 +160,8 @@ class ModelAnalysisView(QWidget):
         splitter.setStretchFactor(1, 2)
 
         main_layout.addWidget(splitter, stretch=1)
+        scroll.setWidget(container)
+        root_layout.addWidget(scroll)
 
     def _create_score_card(self, title: str, value: str, subtext: str, color: str) -> QFrame:
         card = QFrame()

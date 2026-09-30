@@ -35,9 +35,10 @@ class ReportsView(QWidget):
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
         container = QWidget()
+        container.setMinimumWidth(1160)
         main_layout = QVBoxLayout(container)
         main_layout.setContentsMargins(28, 24, 28, 28)
         main_layout.setSpacing(18)
@@ -117,6 +118,7 @@ class ReportsView(QWidget):
         self.table_reports.setSelectionBehavior(QTableWidget.SelectRows)
         self.table_reports.setFocusPolicy(Qt.NoFocus)
         self.table_reports.setAlternatingRowColors(True)
+        self.table_reports.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.table_reports.setMinimumHeight(380)
         main_layout.addWidget(self.table_reports, stretch=1)
         self.animated_cards.append(self.table_reports)

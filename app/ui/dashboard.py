@@ -35,9 +35,10 @@ class DashboardView(QWidget):
         # Comfortable scroll area so content is never squeezed
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
         container = QWidget()
+        container.setMinimumWidth(1160)
         main_layout = QVBoxLayout(container)
         main_layout.setContentsMargins(32, 28, 32, 32)
         main_layout.setSpacing(24)
@@ -282,6 +283,7 @@ class DashboardView(QWidget):
         self.table_projects.setFocusPolicy(Qt.NoFocus)
         self.table_projects.setSelectionBehavior(QTableWidget.SelectRows)
         self.table_projects.setAlternatingRowColors(True)
+        self.table_projects.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.table_projects.setMinimumHeight(380)
         main_layout.addWidget(self.table_projects, stretch=1)
         self.animated_cards.append(self.table_projects)
