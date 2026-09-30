@@ -1,0 +1,11 @@
+# Nibble — Qualcomm Snapdragon Target Requirements
+# Install ONLY on Qualcomm Snapdragon X-series ARM64 Windows devices
+-r requirements.txt
+
+# Qualcomm AI Hub Cloud Service SDK
+qai-hub>=0.10.0
+
+# Notes for native on-device Qualcomm Hexagon NPU execution:
+# 1. Install Qualcomm Neural Processing SDK (QNN SDK) from Qualcomm Developer Network.
+# 2. Build or install ONNX Runtime with QNN Execution Provider (onnxruntime-qnn) for Windows ARM64.
+# 3. DirectML execution provider on Windows ARM64 can optionally be installed via onnxruntime-directml.
