@@ -70,10 +70,14 @@ class ModelLibraryView(QWidget):
         self.table_catalog.setHorizontalHeaderLabels([
             "Architecture", "Category", "Recommended Precision", "Expected NPU Compatibility", "Snapdragon Preset", "Action"
         ])
-        self.table_catalog.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table_catalog.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        self.table_catalog.horizontalHeader().setSectionResizeMode(5, QHeaderView.Fixed)
-        self.table_catalog.setColumnWidth(5, 130)
+        header = self.table_catalog.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.Stretch)
+        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(5, QHeaderView.Fixed)
+        self.table_catalog.setColumnWidth(5, 120)
         self.table_catalog.verticalHeader().setVisible(False)
         self.table_catalog.verticalHeader().setDefaultSectionSize(48)
         self.table_catalog.setShowGrid(False)

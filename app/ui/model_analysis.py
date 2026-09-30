@@ -101,8 +101,13 @@ class ModelAnalysisView(QWidget):
         self.table_nodes.setHorizontalHeaderLabels([
             "Op Type", "Node Identifier", "NPU Support", "GPU Support", "Compute (FLOPs)", "Data Type"
         ])
-        self.table_nodes.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table_nodes.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header = self.table_nodes.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)
         self.table_nodes.verticalHeader().setVisible(False)
         self.table_nodes.verticalHeader().setDefaultSectionSize(44)
         self.table_nodes.setShowGrid(False)

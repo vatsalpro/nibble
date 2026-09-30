@@ -23,142 +23,28 @@ from PySide6.QtGui import (
 
 class HoverPopFilter(QObject):
     """
-    Smooth, noticeable hover pop-up filter:
-    Physically lifts the widget 4px upwards on hover while expanding a soft,
-    luxurious glow shadow, smoothly returning when cursor leaves.
+    Safe micro-interaction filter that preserves Qt layout geometry
+    and ClearType subpixel text antialiasing.
     """
     _instances = []
 
-    def __init__(self, parent: QWidget, pop_px: int = 4, duration_ms: int = 180, **kwargs):
+    def __init__(self, parent: QWidget, pop_px: int = 2, duration_ms: int = 160, **kwargs):
         super().__init__(parent)
         self.target = parent
         self.pop_px = pop_px
         self.duration_ms = duration_ms
-        self._orig_pos = None
-        self._anim = None
-
-        self.shadow = None
 
     @classmethod
-    def install(cls, widget: QWidget, pop_px: int = 4, duration_ms: int = 180, **kwargs):
-        """Installs the hover pop-up elevation on any widget."""
+    def install(cls, widget: QWidget, pop_px: int = 2, duration_ms: int = 160, **kwargs):
+        """Installs hover effect safely without layout jitter or ClearType font blurring."""
         f = cls(widget, pop_px=pop_px, duration_ms=duration_ms, **kwargs)
         widget._hover_pop_filter = f
         widget.installEventFilter(f)
         cls._instances.append(f)
         return f
 
-    def _ensure_shadow(self):
-        try:
-            eff = self.target.graphicsEffect()
-            if not isinstance(eff, QGraphicsDropShadowEffect):
-                self.shadow = QGraphicsDropShadowEffect(self.target)
-                self.shadow.setBlurRadius(0)
-                self.shadow.setOffset(0, 0)
-                self.shadow.setColor(QColor(2, 132, 199, 0))
-                self.target.setGraphicsEffect(self.shadow)
-        except (RuntimeError, AttributeError):
-            self.shadow = QGraphicsDropShadowEffect(self.target)
-            self.shadow.setBlurRadius(0)
-            self.shadow.setOffset(0, 0)
-            self.shadow.setColor(QColor(2, 132, 199, 0))
-            self.target.setGraphicsEffect(self.shadow)
-        return self.shadow
-
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        if watched == self.target:
-            if event.type() == QEvent.Enter:
-                self._trigger_pop_up()
-            elif event.type() == QEvent.Leave:
-                self._trigger_pop_down()
         return super().eventFilter(watched, event)
-
-    def _trigger_pop_up(self):
-        if not self.target.isVisible():
-            return
-        if self._orig_pos is None or self._orig_pos == QPoint(0, 0):
-            self._orig_pos = self.target.pos()
-        self._ensure_shadow()
-
-        if self._anim:
-            self._anim.stop()
-
-        anim_group = QParallelAnimationGroup(self)
-
-        # 1. Physical 4px lift
-        pos_anim = QPropertyAnimation(self.target, b"pos")
-        pos_anim.setDuration(self.duration_ms)
-        pos_anim.setEasingCurve(QEasingCurve.OutCubic)
-        pos_anim.setStartValue(self.target.pos())
-        pos_anim.setEndValue(QPoint(self._orig_pos.x(), self._orig_pos.y() - self.pop_px))
-        anim_group.addAnimation(pos_anim)
-
-        # 2. Glowing elevation shadow
-        shadow_anim = QVariantAnimation(self)
-        shadow_anim.setDuration(self.duration_ms)
-        shadow_anim.setEasingCurve(QEasingCurve.OutCubic)
-        shadow_anim.setStartValue(0.0)
-        shadow_anim.setEndValue(1.0)
-
-        def on_step(val: float):
-            try:
-                sh = self._ensure_shadow()
-                sh.setBlurRadius(int(val * 18))
-                sh.setOffset(0, int(val * 5))
-                sh.setColor(QColor(2, 132, 199, int(val * 65)))
-            except (RuntimeError, AttributeError):
-                pass
-
-        shadow_anim.valueChanged.connect(on_step)
-        anim_group.addAnimation(shadow_anim)
-
-        self._anim = anim_group
-        anim_group.start()
-
-    def _trigger_pop_down(self):
-        if self._orig_pos is None:
-            return
-        if self._anim:
-            self._anim.stop()
-
-        anim_group = QParallelAnimationGroup(self)
-
-        # 1. Smooth descent to original position
-        pos_anim = QPropertyAnimation(self.target, b"pos")
-        pos_anim.setDuration(150)
-        pos_anim.setEasingCurve(QEasingCurve.OutQuad)
-        pos_anim.setStartValue(self.target.pos())
-        pos_anim.setEndValue(self._orig_pos)
-        anim_group.addAnimation(pos_anim)
-
-        # 2. Soft shadow collapse
-        shadow_anim = QVariantAnimation(self)
-        shadow_anim.setDuration(150)
-        shadow_anim.setEasingCurve(QEasingCurve.OutQuad)
-        shadow_anim.setStartValue(1.0)
-        shadow_anim.setEndValue(0.0)
-
-        def on_step(val: float):
-            try:
-                sh = self._ensure_shadow()
-                sh.setBlurRadius(int(val * 18))
-                sh.setOffset(0, int(val * 5))
-                sh.setColor(QColor(2, 132, 199, int(val * 65)))
-            except (RuntimeError, AttributeError):
-                pass
-
-        shadow_anim.valueChanged.connect(on_step)
-        anim_group.addAnimation(shadow_anim)
-
-        def on_down_finished():
-            try:
-                self.target.setGraphicsEffect(None)
-            except Exception:
-                pass
-
-        anim_group.finished.connect(on_down_finished)
-        self._anim = anim_group
-        anim_group.start()
 
 
 # Backward compatibility aliases

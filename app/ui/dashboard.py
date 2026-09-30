@@ -269,8 +269,13 @@ class DashboardView(QWidget):
         self.table_projects.setHorizontalHeaderLabels([
             "ID", "Project Name", "Model", "Status", "Speedup [Measured]", "Updated"
         ])
-        self.table_projects.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table_projects.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header = self.table_projects.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)
         self.table_projects.verticalHeader().setVisible(False)
         self.table_projects.verticalHeader().setDefaultSectionSize(46)
         self.table_projects.setShowGrid(False)

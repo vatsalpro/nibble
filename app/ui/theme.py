@@ -114,6 +114,37 @@ QFrame#HeaderBar {{
     padding: 14px 24px;
 }}
 
+QFrame#HeaderTelemetryCapsule {{
+    background-color: #F1F5F9;
+    border: 1px solid #E2E8F0;
+    border-radius: 20px;
+    padding: 4px 16px;
+}}
+
+QFrame#HeaderTelemetryCapsule QLabel#MetricKey {{
+    background: transparent;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748B;
+}}
+
+QFrame#HeaderVDivider {{
+    background-color: #E2E8F0;
+    border: none;
+    margin: 4px 0px;
+}}
+
+QLabel#OfflineEnginePill {{
+    background-color: rgba(22, 163, 74, 0.12);
+    border: 1px solid rgba(22, 163, 74, 0.35);
+    border-radius: 16px;
+    padding: 7px 14px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #16A34A;
+}}
+
 /* Super-Rounded Clean Cards (20px radius) */
 QFrame.CardFrame, QFrame#CardFrame {{
     background-color: #FFFFFF;
@@ -252,28 +283,34 @@ QComboBox::drop-down {{
     padding-right: 8px;
 }}
 
-/* Rounded Tables (18px radius) */
+/* Rounded Tables (16px radius) */
 QTableWidget, QTableView {{
     background-color: #FFFFFF;
     border: 1px solid #E2E8F0;
-    border-radius: 18px;
+    border-radius: 16px;
     gridline-color: transparent;
     color: #0F172A;
-    font-size: 13.5px;
+    font-size: 13px;
     selection-background-color: #E0F2FE;
-    selection-color: #0284C7;
+    selection-color: #0369A1;
+    alternate-background-color: #F8FAFC;
     outline: none;
 }}
 
 QTableWidget::item {{
-    padding: 10px 16px;
+    padding: 8px 14px;
     border-bottom: 1px solid #F1F5F9;
     color: #1E293B;
 }}
 
 QTableWidget::item:selected {{
     background-color: #E0F2FE;
-    color: #0284C7;
+    color: #0369A1;
+    font-weight: 600;
+}}
+
+QTableWidget::item:hover {{
+    background-color: #F1F5F9;
 }}
 
 QTableWidget QPushButton, QTableView QPushButton {{
@@ -299,9 +336,9 @@ QHeaderView::section {{
     color: #64748B;
     border: none;
     border-bottom: 1px solid #E2E8F0;
-    padding: 12px 16px;
+    padding: 10px 14px;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 11.5px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }}
@@ -320,6 +357,20 @@ QProgressBar {{
 QProgressBar::chunk {{
     background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0284C7, stop:1 #38BDF8);
     border-radius: 7px;
+}}
+
+/* Status Bar */
+QStatusBar {{
+    background-color: #F8FAFC;
+    border-top: 1px solid #E2E8F0;
+    color: #64748B;
+    font-size: 12px;
+    padding: 4px 16px;
+}}
+
+QStatusBar QLabel {{
+    color: #64748B;
+    background: transparent;
 }}
 """
 
@@ -378,6 +429,37 @@ QFrame#HeaderBar {{
     border-bottom: 1px solid #1E2633;
     min-height: 84px;
     padding: 14px 24px;
+}}
+
+QFrame#HeaderTelemetryCapsule {{
+    background-color: #162032;
+    border: 1px solid #1F2937;
+    border-radius: 20px;
+    padding: 4px 16px;
+}}
+
+QFrame#HeaderTelemetryCapsule QLabel#MetricKey {{
+    background: transparent;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    color: #94A3B8;
+}}
+
+QFrame#HeaderVDivider {{
+    background-color: #1F2937;
+    border: none;
+    margin: 4px 0px;
+}}
+
+QLabel#OfflineEnginePill {{
+    background-color: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    border-radius: 16px;
+    padding: 7px 14px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #22C55E;
 }}
 
 /* Super-Rounded Glass & Acrylic Cards (20px radius) */
@@ -521,28 +603,34 @@ QComboBox::drop-down {{
     padding-right: 8px;
 }}
 
-/* Rounded Tables (18px radius) */
+/* Rounded Tables (16px radius) */
 QTableWidget, QTableView {{
-    background-color: #121722;
-    border: 1px solid #222D3D;
-    border-radius: 18px;
+    background-color: #111827;
+    border: 1px solid #1F2937;
+    border-radius: 16px;
     gridline-color: transparent;
-    color: #F0F6FC;
-    font-size: 13.5px;
-    selection-background-color: rgba(3, 105, 161, 0.35);
-    selection-color: #38BDF8;
+    color: #F3F4F6;
+    font-size: 13px;
+    selection-background-color: #1E3A5F;
+    selection-color: #FFFFFF;
+    alternate-background-color: #162032;
     outline: none;
 }}
 
 QTableWidget::item {{
-    padding: 10px 16px;
-    border-bottom: 1px solid #1E2636;
-    color: #E2E8F0;
+    padding: 8px 14px;
+    border-bottom: 1px solid #1F2937;
+    color: #E5E7EB;
 }}
 
 QTableWidget::item:selected {{
-    background-color: rgba(3, 105, 161, 0.35);
-    color: #38BDF8;
+    background-color: #1E3A5F;
+    color: #FFFFFF;
+    font-weight: 600;
+}}
+
+QTableWidget::item:hover {{
+    background-color: #1B283D;
 }}
 
 QTableWidget QPushButton, QTableView QPushButton {{
@@ -564,13 +652,13 @@ QTableWidget QPushButton:hover, QTableView QPushButton:hover {{
 }}
 
 QHeaderView::section {{
-    background-color: #151B26;
+    background-color: #151D2C;
     color: #94A3B8;
     border: none;
-    border-bottom: 1px solid #222D3D;
-    padding: 12px 16px;
+    border-bottom: 1px solid #1F2937;
+    padding: 10px 14px;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 11.5px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }}
@@ -589,6 +677,20 @@ QProgressBar {{
 QProgressBar::chunk {{
     background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #16A34A, stop:1 #22C55E);
     border-radius: 7px;
+}}
+
+/* Status Bar */
+QStatusBar {{
+    background-color: #0E131D;
+    border-top: 1px solid #1F2937;
+    color: #94A3B8;
+    font-size: 12px;
+    padding: 4px 16px;
+}}
+
+QStatusBar QLabel {{
+    color: #94A3B8;
+    background: transparent;
 }}
 """
 
